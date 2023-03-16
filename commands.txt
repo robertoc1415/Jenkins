@@ -1,0 +1,17 @@
+mkdir /var/jenkins_home
+sudo chown -R 1000:1000 /var/jenkins_home/
+docker run -p 8080:8080 -p 50000:50000 -v /var/jenkins_home:/var/jenkins_home --name jenkins jenkins
+
+sudo gpasswd -a jenkins docker
+sudo chmod 777 /var/run/docker.sock
+
+curl -SL https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+/usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+docker-compose --version
+
+
+http://34.125.133.115/jenkins/scriptApproval/
+method hudson.model.Run getCause java.lang.Class
+method org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper getRawBuild

@@ -1,0 +1,83 @@
+import groovy.json.JsonOutput
+
+def COLOR_MAP = [
+    'SUCCESS': 'good',
+    'FAILURE': 'danger'
+]
+
+def getBuildUser(){
+    return currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
+}
+pipeline{
+
+    agent any
+    environment{
+        BUILD_USER = ''
+    }
+    
+    stages{
+    
+        stage("Request received") {
+        steps{
+            slackSend channel: SlackChannel,
+                      color: '#36C5F0',
+                      message: "Your job *${env.JOB_NAME}* is being built\n"
+            }
+        }
+
+        stage("Fix the permission issue") {
+
+            agent any
+
+            steps {
+                sh "sudo chown root:jenkins /run/docker.sock"
+            }
+        }
+
+        stage("Verify tooling"){
+
+            steps{
+                sh '''
+                    docker info
+                    docker version
+                    docker-compose --version
+                '''
+
+            }
+
+        }
+        
+        stage("Notify") {
+            steps{
+                slackSend channel: SlackChannel,
+                          color: '#36C5F0',
+                          message: "Building Docker images\n"
+            }
+        }
+        stage("Building Docker images"){
+
+            steps{
+                sh 'chmod 777 -R .'
+                sh 'ls -la'
+                sh 'docker-compose build'
+                sh 'docker-compose down'
+                sh 'docker-compose up -d --no-deps --force-recreate --remove-orphans'
+
+            }
+
+        }
+
+    }
+
+    post{
+        always{
+
+            slackSend channel: SlackChannel,
+                      color: COLOR_MAP[currentBuild.currentResult],
+                      message: "${currentBuild.currentResult}:* ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n"
+        }
+    }
+
+    // https://<SERVER>/cicdeasydata/job/<JOB_NAME>/buildWithParameters?token=easydataeasydata&SlackChannel=<SlackChannel>
+
+}
